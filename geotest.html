@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=iso-8859-1">
+  <title>GeoNames practice</title>
+    <script type="text/javascript"
+      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAi1FCQWhfSe3jMfz96uecYBbq_e21Nh6M&sensor=false">
+    </script>
+  <script type="text/javascript" src="geo.js">
+</script>
+  <style type="text/css">
+#suggestDiv {border: 1px solid #8FABFF; visibility:hidden; text-align: left; white-space: nowrap; background-color: #eeeeee;}
+  .suggestions { font-size: 14;background-color: #eeeeee; }
+  .suggestionMouseOver { font-size: 14;background: #3333ff; color: white; }
+  </style>
+  
+  <script type="text/javascript">
+  /* Ruth Helfinstein 12/2012
+     based on ajax-postalcode-autocomplete.html from geonames.org
+     
+   */
+   
+
+/* ideally, we would keep track of all this data.
+  currently it's not passed back from the geo calls, but it could be - maybe
+  we need a geo object to be returned or something?  but then it's no simpler than
+  the basic api, right ? */
+/*var currentPostalCode;
+var currentCityName;
+var currentLat;
+var currentLong; */
+
+var radius = 10;  // default radius. max of 30 accepted by geonames api
+var byPostalCode; // for now, to keep track of how we're searching - true = postal code, false=lat lon
+
+
+function doCityList(cities) {
+    if (cities == null) {
+        // There was a problem parsing search results
+        return;
+    }
+
+
+
+     if (!byPostalCode) {
+         document.getElementById("postalcodeInput").value = '';
+     }
+      var placeInput = document.getElementById("placeInput");
+      // for now, put it in a table to display
+
+      var table = document.getElementById("myTable");
+      // delete any existing rows
+      table.deleteCaption();
+      var numRows = table.rows.length;
+      for (i = 0; i < numRows; i++) {
+         table.deleteRow(0);
+      }
+      
+      if (cities.length != 0) {
+         placeInput.value = cities[0];
+     // create the new table
+         var caption = table.createCaption();
+         caption.innerHTML="<b>Cities near " + cities[0] + "</b>";
+
+         var tbody = document.createElement("tbody");
+         table.appendChild(tbody);
+      
+         var r = 0;
+         for (var x in cities) {
+            tbody.insertRow(r);
+            tbody.rows[r].insertCell(0);
+            tbody.rows[r].cells[0].appendChild(document.createTextNode(cities[x]));
+            r++;  // add a row
+         }
+      } else {       
+      
+         placeInput.value = '';
+       }
+      closeSuggestBox();
+
+}
+
+
+// for the given postal code
+
+function isValidRadius(num) {
+   return (!isNaN(num) && num > 0 && num <= 30);
+
+}
+function isValidPostalCode(s) {  
+    return /(^\d{5}(-\d{4})?$)/.test(s);
+}
+
+function isNumber(numString) {
+
+   n = parseFloat(numString);
+  return (!isNaN(n) && isFinite(n));
+}
+
+function getCurrentRadius() {
+   // read the current radius from the user or use the default
+    
+    var r = parseInt(document.getElementById("cityradius").value);
+    if (!isValidRadius(r)) {
+         r = radius; // use the default
+         document.getElementById("cityradius").value = radius.toString();
+    }
+    return r;
+}
+
+// this function is called when the user leaves the postal code input field
+// it call the geonames.org JSON webservice to fetch an array of places
+
+function postalCodeLookup() {
+    byPostalCode = true;
+    var country = "US";    // we only handle postal codes within the US
+    openSuggestBox();
+    var postalcode = document.getElementById("postalcodeInput").value;
+    if (isValidPostalCode(postalcode)) {
+       var currentRadius = getCurrentRadius();
+       getNearbyCitiesByPostalCode(postalcode, currentRadius, doCityList);
+       document.getElementById("latitude").value = "";
+       document.getElementById("longitude").value = "";
+       document.getElementById("map_canvas").innerHTML = "";
+   } else {
+   
+   // otherwise it's an input error, just reset the field for now
+      // reset any existing list
+      doCityList([]);
+      document.getElementById("postalcodeInput").value = "";
+  }
+    
+}
+
+function latLonLookup() {
+   byPostalCode = false;
+   openSuggestBox();
+   var latitude = document.getElementById("latitude").value;
+   var longitude = document.getElementById("longitude").value;
+   if (isNumber(latitude) && isNumber(longitude)) {
+      var currentRadius = getCurrentRadius();
+      getNearbyCitiesByLatLon(latitude, longitude, currentRadius, doCityList);
+      
+      mapLatLong(latitude, longitude, currentRadius);
+   } else {
+   // otherwise it's an input error, just reset the field for now
+      //document.getElementByID("latitude").value = "";
+      //document.getElementByID("longitude").value = "";
+      
+      // erase any existing list.
+      doCityList([]);
+      document.getElementById("latitude").value = "";
+       document.getElementById("longitude").value = "";
+       document.getElementById("map_canvas").innerHTML = "";    
+   }
+
+}
+
+function openSuggestBox() {
+    // display loading in suggest box
+    document.getElementById('suggestBoxElement').style.visibility = 'visible';
+    document.getElementById('suggestBoxElement').innerHTML = '<small><i>loading ...<\/i><\/small>';
+}
+function closeSuggestBox() {
+    document.getElementById('suggestBoxElement').innerHTML = '';
+    document.getElementById('suggestBoxElement').style.visibility = 'hidden';
+}
+
+function mapLatLong(latitude, longitude, r) {
+  // use google maps api to draw a map with a circle 
+   var myLatlng = new google.maps.LatLng(latitude, longitude);
+     var mapOptions = {
+       center: myLatlng,
+       zoom: 11,
+       mapTypeId: google.maps.MapTypeId.ROADMAP
+     };
+     var map = new google.maps.Map(document.getElementById("map_canvas"),
+         mapOptions);
+         
+        var marker = new google.maps.Marker({
+         position: myLatlng,
+         map: map,
+         title:"Hello World!"
+     });
+      var circleOptions = {
+        center: myLatlng,
+        radius: r*1000,  // in meters
+        map: map,
+        editable: false
+      };
+      
+      myCircle = new google.maps.Circle(circleOptions);
+     // myCircle.setMap(map);
+   }
+   
+   function initialize() {
+      var cityRadius = document.getElementById("cityradius");
+      cityRadius.value = radius.toString();   // starting value
+    }
+
+
+
+  </script>
+
+</head>
+
+<body onload="initialize();">
+   <form name="myform" id="myform">
+          <p>Search for cities within <input id="cityradius" name="radius" size="2" type="text"> kilometers (between 1 and 30).</p>
+          <p>PostalCode / Place: <input id="postalcodeInput" name="postalcode"  size="12" type="text" />
+          <input id="placeInput" name="place" size="30" readonly="readonly" type="text" />
+          <input type=button onclick="postalCodeLookup()" value="Find Cities" /> </p>
+
+          <p>Latitude:<input id="latitude" name="lat" size="12" type="text">
+          Longitude:<input id="longitude" name="lon" size="12" type="text">
+          <input type=button onclick="latLonLookup()" value="Find Cities" /></p>
+   </form> 
+
+    <div style="visibility: hidden;" id="suggestBoxElement"></div>
+
+     <table id="myTable" border="1"></table>
+     
+         <div id="map_canvas" style="width:500px; height:500px"></div>
+
+</body>
+</html>
