@@ -71,7 +71,7 @@ function getNearbyCitiesByPostalCode(postalcode, radius, callbackFN) {
    userCallback = callbackFN; // function to call with a list of city names 
     
    var request = 'http://api.geonames.org/findNearbyPostalCodesJSON?postalcode=' + postalcode 
-               + '&country=US'  + '&maxRows=20&radius=' + radius + '&username=notruthless' 
+               + '&country=US'  + '&maxRows=20&radius=' + radius + '&username=your_user_name' 
                +  '&callback=cityListCallback' ;
    sendRequest(request);
 }
