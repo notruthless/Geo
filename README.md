@@ -19,4 +19,4 @@ Functions:
    Calls back the callback function with an array of cities within that radius.
    
    
-   ***If you're going to use this code, replace my geonames id with your own please***
+NOTE: Written in 2012, just uploading for GitHub completeness
