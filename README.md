@@ -19,4 +19,4 @@ Functions:
    Calls back the callback function with an array of cities within that radius.
    
    
-NOTE: Written in 2012, just uploading for GitHub completeness
+NOTE: Written in (and unchanged since) 2012, just uploading to have it on GitHub 
