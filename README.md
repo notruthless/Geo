@@ -18,5 +18,6 @@ Functions:
    
    Calls back the callback function with an array of cities within that radius.
    
-   
-NOTE: Written in (and unchanged since) 2012, just uploading to have it on GitHub 
+*To actually use this library, you have to change "your_user_id" in the code to your geonames id*
+
+**NOTE: Written in (and unchanged since) 2012, just uploading to have it on GitHub**
